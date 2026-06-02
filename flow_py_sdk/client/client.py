@@ -514,6 +514,28 @@ class AccessAPI(AccessApiStub):
         response = await super().get_transaction_result(id=id)
         return entities.TransactionResultResponse.from_proto(response, id=id)
 
+    async def get_transaction_result_by_index(
+        self, *, block_id: bytes = b"", index: int = 0
+    ) -> entities.TransactionResultResponse:
+        """
+        Get a transaction result by its index within a block.
+
+        Parameters
+        ----------
+        block_id: bytes
+            The ID of the block containing the transaction.
+        index: int
+            Zero-based index of the transaction within the block.
+
+        Returns
+        -------
+        entities.TransactionResultResponse
+        """
+        response = await super().get_transaction_result_by_index(
+            block_id=block_id, index=index
+        )
+        return entities.TransactionResultResponse.from_proto(response)
+
     async def execute_transaction(
         self, tx: Tx, *, wait_for_seal=True, timeout: Annotated[float, "seconds"] = 30.0
     ) -> entities.TransactionResultResponse:
