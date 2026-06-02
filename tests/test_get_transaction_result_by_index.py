@@ -1,9 +1,6 @@
 import unittest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from flow_py_sdk.client import entities
-from flow_py_sdk.client.client import AccessAPI
-from flow_py_sdk.proto.flow.access import AccessApiStub
 from flow_py_sdk.proto.flow.access import TransactionResultResponse as ProtoTransactionResultResponse
 from flow_py_sdk.proto.flow import entities as proto_entities
 
