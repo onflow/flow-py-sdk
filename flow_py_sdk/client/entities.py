@@ -306,7 +306,7 @@ class TransactionResultResponse(object):
     def from_proto(
         cls,
         proto: access.TransactionResultResponse,
-        id: bytes,
+        id: bytes = b"",
     ) -> "TransactionResultResponse":
         events = []
         for i, event_proto in enumerate(proto.events):
