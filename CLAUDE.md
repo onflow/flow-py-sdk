@@ -45,9 +45,8 @@ Understanding the SDK requires reading three layers together (`proto/*.proto`, `
 
 ### Proto sources vs generated stubs
 
-- `proto/flow/access/access.proto` and `proto/flow/entities/*.proto` are **vendored copies** of the upstream Flow protocol definitions from `https://github.com/onflow/flow/tree/master/protobuf/flow`. They are not hand-authored here — when the upstream API changes, copy the new `.proto` files in and regenerate.
+- `proto/flow/access/access.proto` and `proto/flow/entities/*.proto` are **vendored copies** of the upstream Flow protocol definitions from [`github.com/onflow/flow`](https://github.com/onflow/flow/tree/master/protobuf/flow). They are not hand-authored here — when the upstream API changes, copy the new `.proto` files in and regenerate.
 - `flow_py_sdk/proto/flow/{access,entities,execution,legacy}/__init__.py` are the betterproto-generated Python stubs. The grpc service stub lives in `flow_py_sdk/proto/flow/access/__init__.py` as `class AccessApiStub(betterproto.ServiceStub)`.
-- The upstream flow repo is already cloned locally at `/Users/vishal/go/src/github.com/onflow/flow` — copy from `flow/protobuf/flow/access/access.proto` and `flow/protobuf/flow/entities/*.proto` into `proto/flow/` here.
 
 ### betterproto v2 calling convention (CRITICAL)
 
@@ -150,7 +149,7 @@ When adding a new client method, both files need a new entry: the `:::` directiv
 
 ## Adding a new Access API method (recipe)
 
-1. **Update protos.** Copy `protobuf/flow/access/access.proto` and any changed `protobuf/flow/entities/*.proto` from `/Users/vishal/go/src/github.com/onflow/flow/protobuf/flow/` into this repo's `proto/flow/`. Do not edit them by hand.
+1. **Update protos.** Copy `protobuf/flow/access/access.proto` and any changed `protobuf/flow/entities/*.proto` from the upstream [`github.com/onflow/flow`](https://github.com/onflow/flow/tree/master/protobuf/flow) repo into this repo's `proto/flow/`. Do not edit them by hand.
 2. **Regenerate.** `make generate`. Confirm the new request/response classes and the new stub method appear in `flow_py_sdk/proto/flow/access/__init__.py` (the stub class is `AccessApiStub`).
 3. **Import the new request class** at the top of `flow_py_sdk/client/client.py`.
 4. **Add the wrapper** on `AccessAPI`. Keyword-only args, build the request object, `await super().<method>(RequestClass(...))`, then `return entities.X.from_proto(response.<field>)`. If the response is a list (events, results), wrap with a list comprehension over the proto items.
