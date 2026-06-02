@@ -37,6 +37,7 @@ from flow_py_sdk.proto.flow.access import (
     GetNetworkParametersRequest,
     SendTransactionRequest,
     GetTransactionsByBlockIdRequest,
+    GetSystemTransactionResultRequest,
 )
 from flow_py_sdk.script import Script
 from flow_py_sdk.tx import Tx, TransactionStatus
@@ -604,6 +605,31 @@ class AccessAPI(AccessApiStub):
             GetTransactionsByBlockIdRequest(block_id=block_id)
         )
         return [entities.Transaction.from_proto(t) for t in response.transactions]
+
+    async def get_system_transaction_result(
+        self, *, block_id: bytes = b""
+    ) -> entities.TransactionResultResponse:
+        """
+        Get the result of the system transaction for a block.
+
+        Returns the result of the system (scheduled) transaction that runs at the
+        end of every block. This transaction is not accessible via collection
+        queries.
+
+        Parameters
+        ----------
+        block_id: bytes
+            The ID of the block.
+
+        Returns
+        -------
+        entities.TransactionResultResponse
+            The result of the system transaction for the block.
+        """
+        response = await super().get_system_transaction_result(
+            GetSystemTransactionResultRequest(block_id=block_id)
+        )
+        return entities.TransactionResultResponse.from_proto(response)
 
     async def execute_transaction(
         self, tx: Tx, *, wait_for_seal=True, timeout: Annotated[float, "seconds"] = 30.0

@@ -36,6 +36,8 @@
 
 ::: flow_py_sdk.AccessAPI.get_transactions_by_block_id
 
+::: flow_py_sdk.AccessAPI.get_system_transaction_result
+
 ::: flow_py_sdk.AccessAPI.get_transaction
 
 ::: flow_py_sdk.AccessAPI.execute_transaction
