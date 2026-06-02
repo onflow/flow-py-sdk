@@ -313,7 +313,7 @@ transaction script: transaction(){prepare(){log("OK")}}
 
 [<img src="https://raw.githubusercontent.com/onflow/sdks/main/templates/documentation/ref.svg" width="130"/>](./api_docs/client.md#transactions)
 
-Retrieve a transaction result by its block ID and its zero-based position within that block. Useful when you know the block but not the transaction ID.
+Retrieve a transaction result by its block ID and its zero-based position within that block. Useful when you know the block but not the transaction ID, and required for accessing scheduled transactions and system transactions which have no user-facing transaction ID.
 
 📖 **Block ID** is the identifier of the block containing the transaction.
 
