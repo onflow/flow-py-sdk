@@ -30,6 +30,8 @@
 
 ::: flow_py_sdk.AccessAPI.get_transaction_result
 
+::: flow_py_sdk.AccessAPI.get_transaction_result_by_index
+
 ::: flow_py_sdk.AccessAPI.get_transaction
 
 ::: flow_py_sdk.AccessAPI.execute_transaction

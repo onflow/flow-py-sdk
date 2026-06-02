@@ -309,6 +309,36 @@ transaction proposer: 01cf0e2f2f715450
 transaction script: transaction(){prepare(){log("OK")}}
 ```
 
+### Get Transaction Result By Index
+
+[<img src="https://raw.githubusercontent.com/onflow/sdks/main/templates/documentation/ref.svg" width="130"/>](./api_docs/client.md#transactions)
+
+Retrieve a transaction result by its block ID and its zero-based position within that block. Useful when you know the block but not the transaction ID.
+
+📖 **Block ID** is the identifier of the block containing the transaction.
+
+📖 **Index** is the zero-based position of the transaction within the block.
+
+```python
+async def run(self, ctx: Config):
+    async with flow_client(
+            host=ctx.access_node_host, port=ctx.access_node_port
+    ) as client:
+        latest_block = await client.get_latest_block(is_sealed=True)
+
+        # Retrieve the result of the first transaction in the block
+        result = await client.get_transaction_result_by_index(
+            block_id=latest_block.id,
+            index=0,
+        )
+        print("status:", result.status)
+        print("status_code:", result.status_code)
+        if result.error_message:
+            print("error:", result.error_message)
+        for event in result.events:
+            print("event:", event.type)
+```
+
 ### Get Events
 
 [<img src="https://raw.githubusercontent.com/onflow/sdks/main/templates/documentation/ref.svg" width="130"/>](./api_docs/client.md#events)
