@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from flow_py_sdk.client import entities
 from flow_py_sdk.client.client import AccessAPI
-from flow_py_sdk.proto.flow.access import AccessApiStub
+from flow_py_sdk.proto.flow.access import AccessApiStub, GetTransactionByIndexRequest
 from flow_py_sdk.proto.flow.access import TransactionResultResponse as ProtoTransactionResultResponse
 from flow_py_sdk.proto.flow import entities as proto_entities
 
@@ -85,7 +85,7 @@ class TestGetTransactionResultByIndex(unittest.IsolatedAsyncioTestCase):
             await client.get_transaction_result_by_index(
                 block_id=block_id, index=index
             )
-            mock_stub.assert_called_once_with(block_id=block_id, index=index)
+            mock_stub.assert_called_once_with(GetTransactionByIndexRequest(block_id=block_id, index=index))
 
     async def test_error_response_preserved(self):
         block_id = bytes(32)
