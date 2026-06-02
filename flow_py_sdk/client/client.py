@@ -36,6 +36,7 @@ from flow_py_sdk.proto.flow.access import (
     GetEventsForBlockIDsRequest,
     GetNetworkParametersRequest,
     SendTransactionRequest,
+    GetTransactionsByBlockIdRequest,
 )
 from flow_py_sdk.script import Script
 from flow_py_sdk.tx import Tx, TransactionStatus
@@ -555,6 +556,55 @@ class AccessAPI(AccessApiStub):
             GetTransactionByIndexRequest(block_id=block_id, index=index)
         )
         return entities.TransactionResultResponse.from_proto(response)
+
+    async def get_transaction_results_by_block_id(
+        self, *, block_id: bytes = b""
+    ) -> list[entities.TransactionResultResponse]:
+        """
+        Get all transaction results for a block.
+
+        Returns results for every transaction in the block including scheduled
+        and system transactions, which are not accessible via collection queries.
+
+        Parameters
+        ----------
+        block_id: bytes
+            The ID of the block.
+
+        Returns
+        -------
+        list[entities.TransactionResultResponse]
+        """
+        response = await super().get_transaction_results_by_block_id(
+            GetTransactionsByBlockIdRequest(block_id=block_id)
+        )
+        return [
+            entities.TransactionResultResponse.from_proto(r)
+            for r in response.transaction_results
+        ]
+
+    async def get_transactions_by_block_id(
+        self, *, block_id: bytes = b""
+    ) -> list[entities.Transaction]:
+        """
+        Get all transactions in a block.
+
+        Returns every transaction in the block including scheduled and system
+        transactions, which are not accessible via collection queries.
+
+        Parameters
+        ----------
+        block_id: bytes
+            The ID of the block.
+
+        Returns
+        -------
+        list[entities.Transaction]
+        """
+        response = await super().get_transactions_by_block_id(
+            GetTransactionsByBlockIdRequest(block_id=block_id)
+        )
+        return [entities.Transaction.from_proto(t) for t in response.transactions]
 
     async def execute_transaction(
         self, tx: Tx, *, wait_for_seal=True, timeout: Annotated[float, "seconds"] = 30.0
