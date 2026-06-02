@@ -574,14 +574,12 @@ class AccessAPI(AccessApiStub):
         Returns
         -------
         list[entities.TransactionResultResponse]
+            One result per transaction in the block, in execution order.
         """
         response = await super().get_transaction_results_by_block_id(
             GetTransactionsByBlockIdRequest(block_id=block_id)
         )
-        return [
-            entities.TransactionResultResponse.from_proto(r)
-            for r in response.transaction_results
-        ]
+        return [entities.TransactionResultResponse.from_proto(r) for r in response.transaction_results]
 
     async def get_transactions_by_block_id(
         self, *, block_id: bytes = b""
@@ -600,6 +598,7 @@ class AccessAPI(AccessApiStub):
         Returns
         -------
         list[entities.Transaction]
+            One transaction per entry in the block, in execution order.
         """
         response = await super().get_transactions_by_block_id(
             GetTransactionsByBlockIdRequest(block_id=block_id)

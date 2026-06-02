@@ -91,6 +91,7 @@ class TestGetTransactionsByBlockId(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(1, len(results))
         self.assertIsInstance(results[0], entities.Transaction)
+        self.assertEqual(b"transaction {}", results[0].script)
 
     async def test_passes_correct_request_to_stub(self):
         block_id = bytes.fromhex("cd" * 32)
@@ -105,3 +106,15 @@ class TestGetTransactionsByBlockId(unittest.IsolatedAsyncioTestCase):
             mock_stub.assert_called_once_with(
                 GetTransactionsByBlockIdRequest(block_id=block_id)
             )
+
+    async def test_empty_block_returns_empty_list(self):
+        block_id = bytes(32)
+        proto_response = ProtoTransactionsResponse(transactions=[])
+        client = AccessAPI(channel=MagicMock())
+        with patch.object(
+            AccessApiStub,
+            "get_transactions_by_block_id",
+            new=AsyncMock(return_value=proto_response),
+        ):
+            results = await client.get_transactions_by_block_id(block_id=block_id)
+        self.assertEqual([], results)
