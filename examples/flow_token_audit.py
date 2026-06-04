@@ -95,8 +95,8 @@ EVENT_TOKENS_WITHDRAWN = "A.1654653399040a61.FlowToken.TokensWithdrawn"
 class Transfer:
     """One deposit or withdrawal event parsed from a transaction result."""
     block_height: int
-    tx_id: str           # hex string; "system" for the system transaction
-    tx_index: int        # position within the block (-1 for system tx)
+    tx_id: str           # hex string
+    tx_index: int        # position within the block
     event_index: int     # position within the transaction
     amount: Decimal      # FLOW amount (human-readable, e.g. 1.50000000)
     address: Optional[str]  # hex address; None when the vault has no owner
@@ -109,7 +109,7 @@ class BlockAudit:
     num_transactions: int
     deposits: list[Transfer] = field(default_factory=list)
     withdrawals: list[Transfer] = field(default_factory=list)
-    system_tx_scanned: bool = False
+    num_results: int = 0  # total results returned by get_transaction_results_by_block_id
 
 
 # ---------------------------------------------------------------------------
@@ -226,14 +226,22 @@ async def audit_block(client, block) -> BlockAudit:
 
     Key API calls
     -------------
-    get_transactions_by_block_id   — returns every Transaction in the block
-                                     (including those not reachable via
-                                     collection queries, e.g. system txs)
-    get_transaction_results_by_block_id — one result per transaction,
-                                     containing the events and status
-    get_system_transaction_result  — the protocol-level transaction that runs
-                                     at the end of every block (epoch logic,
-                                     fee distribution, reward minting)
+    get_transactions_by_block_id
+        Returns every Transaction in the block, including scheduled/system
+        transactions that are not reachable via collection queries.
+
+    get_transaction_results_by_block_id
+        Returns every transaction result (events, status) in the block,
+        including scheduled/system transactions. This is the single call
+        needed for comprehensive event ingestion — no separate system
+        transaction call required.
+        (See: https://forum.flow.com/t/how-exchanges-and-indexers-can-ingest-scheduled-transactions-on-flow/8404)
+
+    Pattern to avoid
+    ----------------
+    GetBlock → GetCollection → GetTransaction will silently miss scheduled
+    transactions because the System Collection is not included in collection
+    queries.
     """
     block_id = block.id
     audit = BlockAudit(
@@ -243,23 +251,24 @@ async def audit_block(client, block) -> BlockAudit:
     )
 
     # ── NEW API: bulk-fetch every transaction in the block ─────────────────
-    # This replaces the old pattern of iterating collections → get_collection
+    # Includes user transactions AND scheduled/system transactions.
+    # Replaces the old pattern of iterating collections → get_collection
     # → iterating tx_ids → individual get_transaction calls.
     transactions = await client.get_transactions_by_block_id(block_id=block_id)
     audit.num_transactions = len(transactions)
 
     # ── NEW API: bulk-fetch every transaction result in the block ──────────
-    # This replaces the old per-tx get_transaction_result calls.
-    # Results are returned in execution order, aligned with `transactions`.
+    # Returns results for ALL transactions including scheduled/system ones.
+    # This single call replaces both the old per-tx get_transaction_result
+    # calls AND any separate system transaction result call.
     tx_results = await client.get_transaction_results_by_block_id(block_id=block_id)
+    audit.num_results = len(tx_results)
 
     for i, tx_result in enumerate(tx_results):
-        # Skip transactions that failed with an error.
         if tx_result.error_message:
             log.debug(f"  [block {block.height}] tx[{i}] failed: {tx_result.error_message}")
             continue
 
-        # event.transaction_id carries the actual tx hash from the node.
         tx_id_hex = (
             tx_result.events[0].transaction_id.hex()
             if tx_result.events
@@ -272,41 +281,38 @@ async def audit_block(client, block) -> BlockAudit:
         audit.deposits.extend(deposits)
         audit.withdrawals.extend(withdrawals)
 
-    # ── NEW API: system transaction result ─────────────────────────────────
-    # The system transaction is NOT included in get_transaction_results_by_block_id.
-    # It handles protocol-level FLOW movements: epoch rewards, service fees,
-    # staking payouts. These can be large and must not be missed.
-    try:
-        sys_result = await client.get_system_transaction_result(block_id=block_id)
-        audit.system_tx_scanned = True
-
-        deposits, withdrawals = collect_transfers(
-            sys_result.events, block.height, "system", -1
-        )
-        audit.deposits.extend(deposits)
-        audit.withdrawals.extend(withdrawals)
-    except Exception as exc:
-        # Not every block has a system transaction with observable events.
-        log.debug(f"  [block {block.height}] system tx: {exc}")
-
     return audit
 
 
 # ---------------------------------------------------------------------------
-# Optional: demonstrate get_transaction_result_by_index
+# Bonus: demonstrate targeted single-result APIs
 # ---------------------------------------------------------------------------
 
-async def show_result_by_index(client, block) -> None:
+async def show_targeted_apis(client, block) -> None:
     """
-    Bonus: fetch a single transaction result by its position within the block.
-    Useful for targeted re-inspection without fetching all results.
+    Demonstrate two targeted APIs that complement the bulk query above.
+
+    get_transaction_result_by_index — fetch one result by its position in the
+        block without pulling all results. Useful for spot-checks or re-runs.
+
+    get_system_transaction_result — fetch only the system transaction result
+        directly. Useful when you specifically need to inspect the system
+        transaction (epoch transitions, reward distribution) without parsing
+        the full result set. Note: its events are already included in
+        get_transaction_results_by_block_id, so do not call both and aggregate.
     """
-    result = await client.get_transaction_result_by_index(
+    result_by_index = await client.get_transaction_result_by_index(
         block_id=block.id, index=0
     )
     log.info(
         f"  get_transaction_result_by_index(index=0) → "
-        f"status={result.status}  events={len(result.events)}"
+        f"status={result_by_index.status}  events={len(result_by_index.events)}"
+    )
+
+    sys_result = await client.get_system_transaction_result(block_id=block.id)
+    log.info(
+        f"  get_system_transaction_result → "
+        f"status={sys_result.status}  events={len(sys_result.events)}"
     )
 
 
@@ -317,7 +323,7 @@ async def show_result_by_index(client, block) -> None:
 def print_block_report(audit: BlockAudit, custody_addresses: set[str]) -> None:
     log.info(
         f"Block {audit.height}  ({audit.block_id[:12]}…)  "
-        f"txs={audit.num_transactions}  sys_tx={audit.system_tx_scanned}  "
+        f"txs={audit.num_transactions}  results={audit.num_results}  "
         f"deposits={len(audit.deposits)}  withdrawals={len(audit.withdrawals)}"
     )
 
@@ -385,10 +391,9 @@ async def run_audit(
                     1 for d in audit.deposits if d.address in watched
                 )
 
-            # Demonstrate get_transaction_result_by_index on the first block
-            # that has at least one user transaction.
+            # Demonstrate the targeted single-result APIs on the first block.
             if height == start_height and audit.num_transactions > 0:
-                await show_result_by_index(client, block)
+                await show_targeted_apis(client, block)
 
         log.info("─" * 70)
         log.info(f"Blocks scanned       : {num_blocks}")
