@@ -3,8 +3,8 @@ flow_token_audit.py — Walk sealed blocks and audit FLOW token transfers
 =======================================================================
 
 This example demonstrates the new bulk block-transaction APIs added in the
-flow-py-sdk and shows how a chain-auditing reconciliation loop (such as
-Binance's deposit/withdrawal reconciliation) can be built efficiently.
+flow-py-sdk and shows how a chain-auditing reconciliation loop can be built
+efficiently.
 
 New APIs highlighted
 --------------------
@@ -38,8 +38,7 @@ account addresses, making them safe for custody-address reconciliation.
 
 SDK
 ---
-This example requires flow-py-sdk v2.0.3 or later. v2.0.3 is the first release
-published from the official Flow org repository:
+This example requires flow-py-sdk v2.0.3 or later:
   https://github.com/onflow/flow-py-sdk
 
 Install
@@ -140,7 +139,7 @@ def _parse_ufix64(cadence_field: dict) -> Decimal:
 
     Cadence JSON shape: {"type": "UFix64", "value": "1.50000000"}
 
-    Per Flow team (Q3 in the Binance Q&A): amount is declared as UFix64
+    Per Flow team guidance: amount is declared as UFix64
     (non-optional), so it is always present. A missing or null amount
     indicates a client decoding bug, not a legitimate protocol state.
     """
@@ -356,7 +355,7 @@ async def run_audit(
     start_height : int, optional
         Block height to begin from. Defaults to latest_sealed − num_blocks + 1.
     custody_addresses : list[str], optional
-        Addresses to flag in the log (e.g. Binance custody addresses).
+        Custody addresses to flag in the log output.
     """
     watched: set[str] = set(custody_addresses or [])
 
