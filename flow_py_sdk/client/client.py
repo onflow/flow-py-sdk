@@ -14,8 +14,28 @@ from flow_py_sdk import cadence
 from flow_py_sdk.cadence import Value, cadence_object_hook, encode_arguments
 from flow_py_sdk.client import entities
 from flow_py_sdk.proto.flow.access import (
-    AccessAPIStub,
+    AccessApiStub,
+    PingRequest,
     PingResponse,
+    GetLatestBlockHeaderRequest,
+    GetBlockHeaderByIdRequest,
+    GetBlockHeaderByHeightRequest,
+    GetLatestBlockRequest,
+    GetBlockByIdRequest,
+    GetBlockByHeightRequest,
+    GetCollectionByIdRequest,
+    GetTransactionRequest,
+    GetTransactionByIndexRequest,
+    GetAccountRequest,
+    GetAccountAtLatestBlockRequest,
+    GetAccountAtBlockHeightRequest,
+    ExecuteScriptAtLatestBlockRequest,
+    ExecuteScriptAtBlockIdRequest,
+    ExecuteScriptAtBlockHeightRequest,
+    GetEventsForHeightRangeRequest,
+    GetEventsForBlockIDsRequest,
+    GetNetworkParametersRequest,
+    SendTransactionRequest,
 )
 from flow_py_sdk.script import Script
 from flow_py_sdk.tx import Tx, TransactionStatus
@@ -23,7 +43,7 @@ from flow_py_sdk.tx import Tx, TransactionStatus
 log = logging.getLogger(__name__)
 
 
-class AccessAPI(AccessAPIStub):
+class AccessAPI(AccessApiStub):
     def __init__(
         self,
         channel: "Channel",
@@ -64,7 +84,7 @@ class AccessAPI(AccessAPIStub):
             Return requested block header.
 
         """
-        response = await super().get_latest_block_header(is_sealed=is_sealed)
+        response = await super().get_latest_block_header(GetLatestBlockHeaderRequest(is_sealed=is_sealed))
         return entities.BlockHeader.from_proto(response.block)
 
     async def get_block_header_by_i_d(self, *, id: bytes = b"") -> entities.BlockHeader:
@@ -82,7 +102,7 @@ class AccessAPI(AccessAPIStub):
             Return requested block header.
 
         """
-        response = await super().get_block_header_by_i_d(id=id)
+        response = await super().get_block_header_by_id(GetBlockHeaderByIdRequest(id=id))
         return entities.BlockHeader.from_proto(response.block)
 
     async def get_block_header_by_height(
@@ -102,7 +122,7 @@ class AccessAPI(AccessAPIStub):
             Return requested block header.
 
         """
-        response = await super().get_block_header_by_height(height=height)
+        response = await super().get_block_header_by_height(GetBlockHeaderByHeightRequest(height=height))
         return entities.BlockHeader.from_proto(response.block)
 
     async def get_latest_block(self, *, is_sealed: bool = False) -> entities.Block:
@@ -120,7 +140,7 @@ class AccessAPI(AccessAPIStub):
             Return requested block.
 
         """
-        response = await super(AccessAPI, self).get_latest_block(is_sealed=is_sealed)
+        response = await super(AccessAPI, self).get_latest_block(GetLatestBlockRequest(is_sealed=is_sealed))
         return entities.Block.from_proto(response.block)
 
     async def get_block_by_i_d(self, *, id: bytes = b"") -> entities.Block:
@@ -138,7 +158,7 @@ class AccessAPI(AccessAPIStub):
             Return requested block.
 
         """
-        response = await super().get_block_by_i_d(id=id)
+        response = await super().get_block_by_id(GetBlockByIdRequest(id=id))
         return entities.Block.from_proto(response.block)
 
     async def get_block_by_height(self, *, height: int = 0) -> entities.Block:
@@ -156,7 +176,7 @@ class AccessAPI(AccessAPIStub):
             Return requested block.
 
         """
-        response = await super().get_block_by_height(height=height)
+        response = await super().get_block_by_height(GetBlockByHeightRequest(height=height))
         return entities.Block.from_proto(response.block)
 
     async def get_collection_by_i_d(self, *, id: bytes = b"") -> entities.Collection:
@@ -174,7 +194,7 @@ class AccessAPI(AccessAPIStub):
             Return requested collection.
 
         """
-        response = await super().get_collection_by_i_d(id=id)
+        response = await super().get_collection_by_id(GetCollectionByIdRequest(id=id))
         return entities.Collection.from_proto(response.collection)
 
     async def get_transaction(self, *, id: bytes = b"") -> entities.Transaction:
@@ -192,7 +212,7 @@ class AccessAPI(AccessAPIStub):
             Return requested transaction.
 
         """
-        response = await super().get_transaction(id=id)
+        response = await super().get_transaction(GetTransactionRequest(id=id))
         return entities.Transaction.from_proto(response.transaction)
 
     async def get_account(
@@ -214,7 +234,7 @@ class AccessAPI(AccessAPIStub):
 
         """
         address = cadence.Address.convert_to_bytes(address)
-        response = await super().get_account(address=address)
+        response = await super().get_account(GetAccountRequest(address=address))
         return entities.Account.from_proto(response.account)
 
     async def get_account_at_latest_block(
@@ -236,7 +256,7 @@ class AccessAPI(AccessAPIStub):
 
         """
         address = cadence.Address.convert_to_bytes(address)
-        response = await super().get_account_at_latest_block(address=address)
+        response = await super().get_account_at_latest_block(GetAccountAtLatestBlockRequest(address=address))
         return entities.Account.from_proto(response.account)
 
     async def get_account_at_block_height(
@@ -264,7 +284,7 @@ class AccessAPI(AccessAPIStub):
         """
         address = cadence.Address.convert_to_bytes(address)
         response = await super().get_account_at_block_height(
-            address=address, block_height=block_height
+            GetAccountAtBlockHeightRequest(address=address, block_height=block_height)
         )
         return entities.Account.from_proto(response.account)
 
@@ -289,7 +309,7 @@ class AccessAPI(AccessAPIStub):
 
         """
         response = await super().execute_script_at_latest_block(
-            script=script, arguments=arguments
+            ExecuteScriptAtLatestBlockRequest(script=script, arguments=arguments)
         )
         return response.value
 
@@ -315,8 +335,8 @@ class AccessAPI(AccessAPIStub):
             Return value is encoded using the JSON-Cadence data interchange format.
 
         """
-        response = await super().execute_script_at_block_i_d(
-            block_id=block_id, script=script, arguments=arguments
+        response = await super().execute_script_at_block_id(
+            ExecuteScriptAtBlockIdRequest(block_id=block_id, script=script, arguments=arguments)
         )
         return response.value
 
@@ -343,7 +363,7 @@ class AccessAPI(AccessAPIStub):
 
         """
         response = await super().execute_script_at_block_height(
-            block_height=block_height, script=script, arguments=arguments
+            ExecuteScriptAtBlockHeightRequest(block_height=block_height, script=script, arguments=arguments)
         )
         return response.value
 
@@ -370,7 +390,7 @@ class AccessAPI(AccessAPIStub):
 
         """
         response = await super().get_events_for_height_range(
-            type=type, start_height=start_height, end_height=end_height
+            GetEventsForHeightRangeRequest(type=type, start_height=start_height, end_height=end_height)
         )
         return [entities.EventsResponseResult.from_proto(er) for er in response.results]
 
@@ -395,7 +415,7 @@ class AccessAPI(AccessAPIStub):
 
         """
         response = await super().get_events_for_block_i_ds(
-            type=type, block_ids=block_ids
+            GetEventsForBlockIDsRequest(type=type, block_ids=block_ids)
         )
         return [entities.EventsResponseResult.from_proto(er) for er in response.results]
 
@@ -411,7 +431,7 @@ class AccessAPI(AccessAPIStub):
         entities.GetNetworkParametersResponse
 
         """
-        response = await super().get_network_parameters()
+        response = await super().get_network_parameters(GetNetworkParametersRequest())
         return entities.GetNetworkParametersResponse.from_proto(response)
 
     async def execute_script(
@@ -476,7 +496,7 @@ class AccessAPI(AccessAPIStub):
         -------
 
         """
-        return await super().ping()
+        return await super().ping(PingRequest())
 
     async def send_transaction(
         self, *, transaction: Optional[entities.Transaction] = None
@@ -493,7 +513,7 @@ class AccessAPI(AccessAPIStub):
         -------
         entities.SendTransactionResponse
         """
-        response = await super().send_transaction(transaction=transaction)
+        response = await super().send_transaction(SendTransactionRequest(transaction=transaction))
         return entities.SendTransactionResponse.from_proto(response)
 
     async def get_transaction_result(
@@ -511,8 +531,30 @@ class AccessAPI(AccessAPIStub):
         -------
         entities.TransactionResultResponse
         """
-        response = await super().get_transaction_result(id=id)
+        response = await super().get_transaction_result(GetTransactionRequest(id=id))
         return entities.TransactionResultResponse.from_proto(response, id=id)
+
+    async def get_transaction_result_by_index(
+        self, *, block_id: bytes = b"", index: int = 0
+    ) -> entities.TransactionResultResponse:
+        """
+        Get a transaction result by its index within a block.
+
+        Parameters
+        ----------
+        block_id: bytes
+            The ID of the block containing the transaction.
+        index: int
+            Zero-based index of the transaction within the block.
+
+        Returns
+        -------
+        entities.TransactionResultResponse
+        """
+        response = await super().get_transaction_result_by_index(
+            GetTransactionByIndexRequest(block_id=block_id, index=index)
+        )
+        return entities.TransactionResultResponse.from_proto(response)
 
     async def execute_transaction(
         self, tx: Tx, *, wait_for_seal=True, timeout: Annotated[float, "seconds"] = 30.0
