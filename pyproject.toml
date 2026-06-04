@@ -5,7 +5,7 @@ description = "A python SKD for the flow blockchain"
 authors = ["Janez Podhostnik <janez.podhostnik@gmail.com>"]
 license = "MIT"
 readme = "README.md"
-repository = "https://github.com/janezpodhostnik/flow-py-sdk"
+repository = "https://github.com/onflow/flow-py-sdk"
 
 [tool.poetry.dependencies]
 python = "^3.9"

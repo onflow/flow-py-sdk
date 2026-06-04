@@ -36,13 +36,23 @@ fields that can be nil for transient vaults (bridge, staking rewards, DEX
 routers). The legacy events' address fields are always populated for real
 account addresses, making them safe for custody-address reconciliation.
 
+SDK
+---
+This example requires flow-py-sdk v2.0.3 or later. v2.0.3 is the first release
+published from the official Flow org repository:
+  https://github.com/onflow/flow-py-sdk
+
+Install
+-------
+  pip install flow-py-sdk==2.0.3
+
 Usage
 -----
   # Scan the 10 most recent sealed blocks on mainnet
-  poetry run python examples/flow_token_audit.py
+  python flow_token_audit.py
 
   # Scan 20 blocks starting at a specific height, flag two custody addresses
-  poetry run python examples/flow_token_audit.py \\
+  python flow_token_audit.py \\
       --blocks 20 \\
       --start-height 105000000 \\
       --custody-address 0x1234567890abcdef \\
