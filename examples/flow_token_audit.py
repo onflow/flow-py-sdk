@@ -8,22 +8,20 @@ efficiently.
 
 New APIs highlighted
 --------------------
-  client.get_transactions_by_block_id(block_id)          → list[Transaction]
   client.get_transaction_results_by_block_id(block_id)   → list[TransactionResultResponse]
   client.get_transaction_result_by_index(block_id, i)    → TransactionResultResponse
   client.get_system_transaction_result(block_id)         → TransactionResultResponse
+  client.get_transactions_by_block_id(block_id)          → list[Transaction]
 
-Old pattern — O(C + T) API calls per block
+Old pattern — O(C + T) API calls per block, misses scheduled transactions
   block
   └─ for each collection:        get_collection_by_i_d(collection_id)
      └─ for each tx_id:          get_transaction(tx_id)
                                  get_transaction_result(tx_id)
 
-New pattern — 3 API calls per block regardless of transaction count
+New pattern — 1 API call per block, includes everything
   block
-  ├─ get_transactions_by_block_id(block.id)          # all Tx metadata
-  ├─ get_transaction_results_by_block_id(block.id)   # all events / statuses
-  └─ get_system_transaction_result(block.id)         # protocol-level events
+  └─ get_transaction_results_by_block_id(block.id)   # all results incl. scheduled
 
 Event guidance (confirmed with Flow team, May 2026)
 ----------------------------------------------------
@@ -224,17 +222,12 @@ async def audit_block(client, block) -> BlockAudit:
     """
     Scan a single sealed block and return all FLOW token transfer events.
 
-    Key API calls
-    -------------
-    get_transactions_by_block_id
-        Returns every Transaction in the block, including scheduled/system
-        transactions that are not reachable via collection queries.
-
+    Key API call
+    ------------
     get_transaction_results_by_block_id
         Returns every transaction result (events, status) in the block,
-        including scheduled/system transactions. This is the single call
-        needed for comprehensive event ingestion — no separate system
-        transaction call required.
+        including scheduled/system transactions. This single call is all
+        that is needed for comprehensive event ingestion.
         (See: https://forum.flow.com/t/how-exchanges-and-indexers-can-ingest-scheduled-transactions-on-flow/8404)
 
     Pattern to avoid
@@ -244,25 +237,20 @@ async def audit_block(client, block) -> BlockAudit:
     queries.
     """
     block_id = block.id
+
+    # ── NEW API: one call returns all transaction results in the block ──────
+    # Includes user transactions AND scheduled/system transactions — everything
+    # that executed in this block. Replaces the old pattern of:
+    #   GetBlock → GetCollection → GetTransaction + GetTransactionResult (per tx)
+    # which silently missed scheduled transactions entirely.
+    tx_results = await client.get_transaction_results_by_block_id(block_id=block_id)
+
     audit = BlockAudit(
         height=block.height,
         block_id=block_id.hex(),
-        num_transactions=0,
+        num_transactions=len(tx_results),
+        num_results=len(tx_results),
     )
-
-    # ── NEW API: bulk-fetch every transaction in the block ─────────────────
-    # Includes user transactions AND scheduled/system transactions.
-    # Replaces the old pattern of iterating collections → get_collection
-    # → iterating tx_ids → individual get_transaction calls.
-    transactions = await client.get_transactions_by_block_id(block_id=block_id)
-    audit.num_transactions = len(transactions)
-
-    # ── NEW API: bulk-fetch every transaction result in the block ──────────
-    # Returns results for ALL transactions including scheduled/system ones.
-    # This single call replaces both the old per-tx get_transaction_result
-    # calls AND any separate system transaction result call.
-    tx_results = await client.get_transaction_results_by_block_id(block_id=block_id)
-    audit.num_results = len(tx_results)
 
     for i, tx_result in enumerate(tx_results):
         if tx_result.error_message:
