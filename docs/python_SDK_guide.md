@@ -339,6 +339,65 @@ async def run(self, ctx: Config):
             print("event:", event.type)
 ```
 
+### Get All Transaction Results for a Block
+
+[<img src="https://raw.githubusercontent.com/onflow/sdks/main/templates/documentation/ref.svg" width="130"/>](./api_docs/client.md#transactions)
+
+Retrieve results for every transaction in a block — including scheduled and system transactions — in a single call. This is the recommended approach for exchanges and indexers: traversing block → collection → transaction misses the System Collection, which contains scheduled and system transactions.
+
+```python
+async def run(self, ctx: Config):
+    async with flow_client(
+            host=ctx.access_node_host, port=ctx.access_node_port
+    ) as client:
+        latest_block = await client.get_latest_block(is_sealed=True)
+
+        results = await client.get_transaction_results_by_block_id(
+            block_id=latest_block.id,
+        )
+        for i, result in enumerate(results):
+            print(f"tx[{i}] status={result.status} events={len(result.events)}")
+```
+
+### Get All Transactions in a Block
+
+[<img src="https://raw.githubusercontent.com/onflow/sdks/main/templates/documentation/ref.svg" width="130"/>](./api_docs/client.md#transactions)
+
+Retrieve the full transaction bodies (script, arguments, signers) for every transaction in a block, including scheduled and system transactions.
+
+```python
+async def run(self, ctx: Config):
+    async with flow_client(
+            host=ctx.access_node_host, port=ctx.access_node_port
+    ) as client:
+        latest_block = await client.get_latest_block(is_sealed=True)
+
+        transactions = await client.get_transactions_by_block_id(
+            block_id=latest_block.id,
+        )
+        for i, tx in enumerate(transactions):
+            print(f"tx[{i}] payer={tx.payer.hex()}")
+```
+
+### Get System Transaction Result
+
+[<img src="https://raw.githubusercontent.com/onflow/sdks/main/templates/documentation/ref.svg" width="130"/>](./api_docs/client.md#transactions)
+
+Retrieve the result of the system transaction that runs at the end of every block. The system transaction executes scheduled transactions (e.g., epoch transitions, token vesting) and is not part of any collection, so it cannot be found via collection queries.
+
+```python
+async def run(self, ctx: Config):
+    async with flow_client(
+            host=ctx.access_node_host, port=ctx.access_node_port
+    ) as client:
+        latest_block = await client.get_latest_block(is_sealed=True)
+
+        result = await client.get_system_transaction_result(
+            block_id=latest_block.id,
+        )
+        print(f"system tx status={result.status} events={len(result.events)}")
+```
+
 ### Get Events
 
 [<img src="https://raw.githubusercontent.com/onflow/sdks/main/templates/documentation/ref.svg" width="130"/>](./api_docs/client.md#events)

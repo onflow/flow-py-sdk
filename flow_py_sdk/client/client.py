@@ -36,6 +36,8 @@ from flow_py_sdk.proto.flow.access import (
     GetEventsForBlockIDsRequest,
     GetNetworkParametersRequest,
     SendTransactionRequest,
+    GetTransactionsByBlockIdRequest,
+    GetSystemTransactionResultRequest,
 )
 from flow_py_sdk.script import Script
 from flow_py_sdk.tx import Tx, TransactionStatus
@@ -553,6 +555,79 @@ class AccessAPI(AccessApiStub):
         """
         response = await super().get_transaction_result_by_index(
             GetTransactionByIndexRequest(block_id=block_id, index=index)
+        )
+        return entities.TransactionResultResponse.from_proto(response)
+
+    async def get_transaction_results_by_block_id(
+        self, *, block_id: bytes = b""
+    ) -> list[entities.TransactionResultResponse]:
+        """
+        Get all transaction results for a block.
+
+        Returns results for every transaction in the block including scheduled
+        and system transactions, which are not accessible via collection queries.
+
+        Parameters
+        ----------
+        block_id: bytes
+            The ID of the block.
+
+        Returns
+        -------
+        list[entities.TransactionResultResponse]
+            One result per transaction in the block, in execution order.
+        """
+        response = await super().get_transaction_results_by_block_id(
+            GetTransactionsByBlockIdRequest(block_id=block_id)
+        )
+        return [entities.TransactionResultResponse.from_proto(r) for r in response.transaction_results]
+
+    async def get_transactions_by_block_id(
+        self, *, block_id: bytes = b""
+    ) -> list[entities.Transaction]:
+        """
+        Get all transactions in a block.
+
+        Returns every transaction in the block including scheduled and system
+        transactions, which are not accessible via collection queries.
+
+        Parameters
+        ----------
+        block_id: bytes
+            The ID of the block.
+
+        Returns
+        -------
+        list[entities.Transaction]
+            One transaction per entry in the block, in execution order.
+        """
+        response = await super().get_transactions_by_block_id(
+            GetTransactionsByBlockIdRequest(block_id=block_id)
+        )
+        return [entities.Transaction.from_proto(t) for t in response.transactions]
+
+    async def get_system_transaction_result(
+        self, *, block_id: bytes = b""
+    ) -> entities.TransactionResultResponse:
+        """
+        Get the result of the system transaction for a block.
+
+        Returns the result of the system (scheduled) transaction that runs at the
+        end of every block. This transaction is not accessible via collection
+        queries.
+
+        Parameters
+        ----------
+        block_id: bytes
+            The ID of the block.
+
+        Returns
+        -------
+        entities.TransactionResultResponse
+            The result of the system transaction for the block.
+        """
+        response = await super().get_system_transaction_result(
+            GetSystemTransactionResultRequest(block_id=block_id)
         )
         return entities.TransactionResultResponse.from_proto(response)
 
